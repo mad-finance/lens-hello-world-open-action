@@ -35,6 +35,7 @@ library Errors {
     // Module Errors
     error InitParamsInvalid();
     error ActionNotAllowed();
+    error ModuleDataMismatch();
 
     error CollectNotAllowed(); // Used in LegacyCollectLib (pending deprecation)
 
