@@ -4,8 +4,6 @@ pragma solidity 0.8.21;
 
 import {IReferenceModule} from "lens/interfaces/IReferenceModule.sol";
 import {IModuleGlobals} from "lens/interfaces/IModuleGlobals.sol";
-import {ILensHub} from "lens/interfaces/ILensHub.sol";
-import {LensModule} from "lens/LensModule.sol";
 import {LensModuleMetadata} from "lens/LensModuleMetadata.sol";
 import {HubRestricted} from "lens/HubRestricted.sol";
 import {FeeModuleBase} from "lens/FeeModuleBase.sol";
@@ -104,6 +102,8 @@ contract TargetedCampaignReferenceModule is
      * @dev contract constructor
      * @param hub LensHub
      * @param moduleGlobals Module globals
+     * @param moduleRegistry Module registry
+     * @param moduleOwner Module owner
      * @param _protocolFeeBps Protocol fee bps to take on the campaign budget
      * @param _protocolFeeBps Client fee bps to take on the campaign budget
      */
@@ -139,7 +139,7 @@ contract TargetedCampaignReferenceModule is
     function initializeReferenceModule(
         uint256 profileId,
         uint256 pubId,
-        address,
+        address /* transactionExecutor */,
         bytes calldata data
     ) external override onlyHub returns (bytes memory) {
         (
