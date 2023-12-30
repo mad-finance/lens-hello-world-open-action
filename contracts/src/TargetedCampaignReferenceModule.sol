@@ -4,13 +4,14 @@ pragma solidity 0.8.21;
 
 import {IReferenceModule} from "lens/interfaces/IReferenceModule.sol";
 import {IModuleGlobals} from "lens/interfaces/IModuleGlobals.sol";
-import {Errors} from "lens/Errors.sol";
 import {ILensHub} from "lens/interfaces/ILensHub.sol";
 import {LensModule} from "lens/LensModule.sol";
 import {LensModuleMetadata} from "lens/LensModuleMetadata.sol";
 import {HubRestricted} from "lens/HubRestricted.sol";
 import {FeeModuleBase} from "lens/FeeModuleBase.sol";
-// import {DataTypes} from 'lens/libraries/DataTypes.sol';
+import {Errors} from "lens/Errors.sol";
+import {Types} from "lens/Types.sol";
+
 import {IERC721} from "open-zeppelin/IERC721.sol";
 import {IERC20} from "open-zeppelin/IERC20.sol";
 import {Ownable} from "open-zeppelin/Ownable.sol";
@@ -53,8 +54,7 @@ contract TargetedCampaignReferenceModule is
     FeeModuleBase,
     HubRestricted,
     IReferenceModule,
-    LensModuleMetadata,
-    Ownable
+    LensModuleMetadata
 {
     using Strings for uint256;
 
@@ -118,7 +118,6 @@ contract TargetedCampaignReferenceModule is
         HubRestricted(hub)
         FeeModuleBase(hub, moduleRegistry)
         LensModuleMetadata(moduleOwner)
-        Ownable()
     {
         MODULE_GLOBALS = IModuleGlobals(moduleGlobals);
         protocolFeeBps = _protocolFeeBps;
@@ -140,6 +139,7 @@ contract TargetedCampaignReferenceModule is
     function initializeReferenceModule(
         uint256 profileId,
         uint256 pubId,
+        address,
         bytes calldata data
     ) external override onlyHub returns (bytes memory) {
         (
@@ -197,42 +197,44 @@ contract TargetedCampaignReferenceModule is
      * - update the reward pool
      */
     function processMirror(
-        uint256 profileId,
-        uint256 profileIdPointed,
-        uint256 pubIdPointed,
-        bytes calldata data
-    ) external override onlyHub {
+        Types.ProcessMirrorParams calldata processMirrorParams
+    ) external override onlyHub returns (bytes memory) {
         CampaignParams storage params = _campaignParamsPerProfilePerPub[
-            profileIdPointed
-        ][pubIdPointed];
+            processMirrorParams.pointedProfileId
+        ][processMirrorParams.pointedPubId];
 
         // this catches two cases 1) nothing in storage for this pub and 2) no rewards left to distribute
-        if (params.budget == 0) return;
+        if (params.budget == 0) return new bytes(0);
 
         // if they chose not to include data, just process the mirror. if they include malformed data, that's on them
-        if (data.length == 0) return;
+        if (processMirrorParams.data.length == 0) return new bytes(0);
 
         // has this profile already claimed?
-        if (campaignRewardClaimed[profileIdPointed][pubIdPointed][profileId])
-            return;
+        if (
+            campaignRewardClaimed[processMirrorParams.pointedProfileId][
+                processMirrorParams.pointedPubId
+            ][processMirrorParams.profileId]
+        ) return new bytes(0);
 
         // decode input
         (
             bytes32[] memory merkleProof,
             uint256 index,
             address clientAddress
-        ) = abi.decode(data, (bytes32[], uint256, address));
+        ) = abi.decode(processMirrorParams.data, (bytes32[], uint256, address));
 
         // if the profile is whitelisted to receive rewards
         if (
             _validateMerkleProof(
                 params.merkleRoot,
-                profileId,
+                processMirrorParams.profileId,
                 index,
                 merkleProof
             )
         ) {
-            address account = IERC721(HUB).ownerOf(profileId);
+            address account = IERC721(HUB).ownerOf(
+                processMirrorParams.profileId
+            );
 
             // send the rewards
             IERC20(params.currency).transfer(account, params.budgetPerMirror);
@@ -249,9 +251,9 @@ contract TargetedCampaignReferenceModule is
 
             // update storage
             params.budget = params.budget - params.budgetPerMirror;
-            campaignRewardClaimed[profileIdPointed][pubIdPointed][
-                profileId
-            ] = true;
+            campaignRewardClaimed[processMirrorParams.pointedProfileId][
+                processMirrorParams.pointedPubId
+            ][processMirrorParams.profileId] = true;
 
             // if no budget remaining, remove it from storage
             if (params.budget == 0) {
@@ -261,47 +263,34 @@ contract TargetedCampaignReferenceModule is
                         .clientFees;
                 }
 
-                delete _campaignParamsPerProfilePerPub[profileIdPointed][
-                    pubIdPointed
-                ];
+                delete _campaignParamsPerProfilePerPub[
+                    processMirrorParams.pointedProfileId
+                ][processMirrorParams.pointedPubId];
 
                 emit TargetedCampaignReferencePublicationClosed(
-                    profileIdPointed,
-                    pubIdPointed,
+                    processMirrorParams.pointedProfileId,
+                    processMirrorParams.pointedPubId,
                     0
                 );
             }
         }
+
+        return new bytes(0);
     }
 
     /**
-     * @dev we don't process comments
+     * @dev we don't process quotes
      */
-    function processComment(
-        uint256, // profileId
-        uint256, // profileIdPointed
-        uint256, // pubIdPointed
-        bytes calldata // data
-    ) external view override onlyHub {}
+    function processQuote(
+        Types.ProcessQuoteParams calldata processQuoteParams
+    ) external view override onlyHub returns (bytes memory) {}
 
     /**
      * @dev we don't process comments
      */
-    function processQuote(
-        uint256, // profileId
-        uint256, // profileIdPointed
-        uint256, // pubIdPointed
-        bytes calldata // data
-    ) external view override onlyHub {}
-    /**
-     * @dev we don't process comments
-     */
     function processComment(
-        uint256, // profileId
-        uint256, // profileIdPointed
-        uint256, // pubIdPointed
-        bytes calldata // data
-    ) external view override onlyHub {}
+        Types.ProcessCommentParams calldata processCommentParams
+    ) external view override onlyHub returns (bytes memory) {}
 
     /**
      * @notice Allows a publication owner to withdraw the remaining budget for their campaign, if any
