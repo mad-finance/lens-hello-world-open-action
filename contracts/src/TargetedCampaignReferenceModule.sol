@@ -3,6 +3,7 @@
 pragma solidity 0.8.21;
 
 import {IReferenceModule} from "lens/interfaces/IReferenceModule.sol";
+import {IModuleGlobals} from "lens/interfaces/IModuleGlobals.sol";
 import {Errors} from "lens/Errors.sol";
 import {ILensHub} from "lens/interfaces/ILensHub.sol";
 import {LensModule} from "lens/LensModule.sol";
@@ -10,14 +11,14 @@ import {LensModuleMetadata} from "lens/LensModuleMetadata.sol";
 import {HubRestricted} from "lens/HubRestricted.sol";
 import {FeeModuleBase} from "lens/FeeModuleBase.sol";
 // import {DataTypes} from 'lens/libraries/DataTypes.sol';
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {IERC721} from "open-zeppelin/IERC721.sol";
+import {IERC20} from "open-zeppelin/IERC20.sol";
+import {Ownable} from "open-zeppelin/Ownable.sol";
+import {MerkleProof} from "open-zeppelin/MerkleProof.sol";
+import {Strings} from "open-zeppelin/Strings.sol";
 
 /**
- * @notice A struct for the campaign parameters
+ * @notice A struct for the cafmpaign parameters
  *
  * @param merkleRoot The merkle tree root for the accounts whitelisted for mirror rewards
  * @param currency The ERC20 payment token; must be whitelisted by Lens Protocol
@@ -49,11 +50,11 @@ struct CampaignParams {
  * NOTE: this contract is ownable in order to set protocol fee configs and withdraw fees accrued
  */
 contract TargetedCampaignReferenceModule is
-    LensModuleMetadata,
-    HubRestricted,
     FeeModuleBase,
-    Ownable,
-    IReferenceModule
+    HubRestricted,
+    IReferenceModule,
+    LensModuleMetadata,
+    Ownable
 {
     using Strings for uint256;
 
@@ -82,6 +83,8 @@ contract TargetedCampaignReferenceModule is
     event WithdrawProtocolFees(address currency, uint256 value);
     event WithdrawClientFees(address client, address currency, uint256 value);
 
+    IModuleGlobals public immutable MODULE_GLOBALS;
+
     uint256 public constant PROTOCOL_FEE_BPS_MAX = 2000; // 20%
     uint256 public constant CLIENT_FEE_BPS_MAX = 1000; // 10%
     uint256 public protocolFeeBps;
@@ -107,9 +110,17 @@ contract TargetedCampaignReferenceModule is
     constructor(
         address hub,
         address moduleGlobals,
+        address moduleRegistry,
+        address moduleOwner,
         uint256 _protocolFeeBps,
         uint256 _clientFeeBps
-    ) HubRestricted(hub) FeeModuleBase(moduleGlobals) Ownable() {
+    )
+        HubRestricted(hub)
+        FeeModuleBase(hub, moduleRegistry)
+        LensModuleMetadata(moduleOwner)
+        Ownable()
+    {
+        MODULE_GLOBALS = IModuleGlobals(moduleGlobals);
         protocolFeeBps = _protocolFeeBps;
         clientFeeBps = _clientFeeBps;
 
@@ -263,6 +274,25 @@ contract TargetedCampaignReferenceModule is
         }
     }
 
+    /**
+     * @dev we don't process comments
+     */
+    function processComment(
+        uint256, // profileId
+        uint256, // profileIdPointed
+        uint256, // pubIdPointed
+        bytes calldata // data
+    ) external view override onlyHub {}
+
+    /**
+     * @dev we don't process comments
+     */
+    function processQuote(
+        uint256, // profileId
+        uint256, // profileIdPointed
+        uint256, // pubIdPointed
+        bytes calldata // data
+    ) external view override onlyHub {}
     /**
      * @dev we don't process comments
      */
@@ -477,7 +507,7 @@ contract TargetedCampaignReferenceModule is
         uint256 totalProfiles
     ) private view {
         if (
-            !_currencyWhitelisted(currency) ||
+            !MODULE_GLOBALS.isCurrencyWhitelisted(currency) ||
             budget == 0 ||
             totalProfiles == 0 ||
             merkleRoot == bytes32(0)
