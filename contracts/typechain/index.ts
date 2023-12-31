@@ -26,3 +26,5 @@ export { TransparentUpgradeableProxy } from "./TransparentUpgradeableProxy";
 export { TransparentUpgradeableProxy__factory } from "./factories/TransparentUpgradeableProxy__factory";
 export { TargetedCampaignReferenceModule } from "./TargetedCampaignReferenceModule";
 export { TargetedCampaignReferenceModule__factory } from "./factories/TargetedCampaignReferenceModule__factory";
+export { Currency } from './Currency';
+export { Currency__factory } from './factories/Currency__factory';
