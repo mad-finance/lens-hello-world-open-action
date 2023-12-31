@@ -16,7 +16,7 @@ import {
   FIRST_PROFILE_ID,
   FIRST_PUB_ID,
   targetedCampaignReferenceModule as referenceModule,
-  freeCollectModule,
+  // freeCollectModule,
   currency as currencyContract,
   OTHER_MOCK_URI,
   CAMPAIGN_FEE_BPS,
@@ -27,6 +27,7 @@ import {
   CAMPAIGN_MERKLE_LEAF,
   CAMPAIGN_MERKLE_LEAF_TWO,
   CAMPAIGN_MERKLE_LEAF_THREE,
+  ZERO_ADDRESS,
 } from "./helpers/constants";
 
 makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
@@ -59,21 +60,15 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
     await expect(
       lensHub.createProfile({
         to: publisher.address,
-        handle: MOCK_PROFILE_HANDLE,
-        imageURI: MOCK_URI,
-        followModule: ethers.ZeroAddress,
+        followModule: ZERO_ADDRESS,
         followModuleInitData: [],
-        followNFTURI: MOCK_FOLLOW_NFT_URI,
       })
     ).to.not.be.reverted;
     await expect(
       lensHub.createProfile({
         to: user.address,
-        handle: "user",
-        imageURI: OTHER_MOCK_URI,
-        followModule: ethers.ZeroAddress,
+        followModule: ZERO_ADDRESS,
         followModuleInitData: [],
-        followNFTURI: MOCK_FOLLOW_NFT_URI,
       })
     ).to.not.be.reverted;
   });
@@ -92,7 +87,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         referenceModule.initializeReferenceModule(
           FIRST_PROFILE_ID,
           FIRST_PUB_ID,
-          "0x"
+          "0x",
+          []
         )
       ).to.be.revertedWith(ERRORS.NOT_HUB);
     });
@@ -100,7 +96,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
     context("context: with invalid params", () => {
       it("reverts when the budget is 0", async () => {
         const referenceModuleInitData =
-          getTargetedCampaignReferenceModuleInitData({
+          await getTargetedCampaignReferenceModuleInitData({
             budget: BigNumber.from("0"),
           });
 
@@ -108,8 +104,9 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            collectModule: freeCollectModule.address,
-            collectModuleInitData: abiCoder.encode(["bool"], [true]),
+            // TODO: deploy free collect module
+            actionModules: [freeCollectModule.address],
+            actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
           })
@@ -118,7 +115,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
 
       it("reverts when the totalProfiles is 0", async () => {
         const referenceModuleInitData =
-          getTargetedCampaignReferenceModuleInitData({
+          await getTargetedCampaignReferenceModuleInitData({
             totalProfiles: 0,
           });
 
@@ -126,8 +123,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            collectModule: freeCollectModule.address,
-            collectModuleInitData: abiCoder.encode(["bool"], [true]),
+            actionModules: [freeCollectModule.address],
+            actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
           })
@@ -136,16 +133,16 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
 
       it("reverts when the merkle root is empty bytes", async () => {
         const referenceModuleInitData =
-          getTargetedCampaignReferenceModuleInitData({
-            merkleRoot: ethers.ZeroHash,
+          await getTargetedCampaignReferenceModuleInitData({
+            merkleRoot: "0x",
           });
 
         await expect(
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            collectModule: freeCollectModule.address,
-            collectModuleInitData: abiCoder.encode(["bool"], [true]),
+            actionModules: [freeCollectModule.address],
+            actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
           })
@@ -154,7 +151,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
 
       it("reverts when the caller does not have enough balance to cover the budget plus fee", async () => {
         const referenceModuleInitData =
-          getTargetedCampaignReferenceModuleInitData({});
+          await getTargetedCampaignReferenceModuleInitData({});
         await currencyContract.mint(
           publisher.address,
           parseEther(DEFAULT_BUDGET)
@@ -164,8 +161,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            collectModule: freeCollectModule.address,
-            collectModuleInitData: abiCoder.encode(["bool"], [true]),
+            actionModules: [freeCollectModule.address],
+            actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
           })
@@ -174,7 +171,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
 
       it("reverts when the caller has not approved the transfer of the budget plus fee", async () => {
         const referenceModuleInitData =
-          getTargetedCampaignReferenceModuleInitData({});
+          await getTargetedCampaignReferenceModuleInitData({});
         const budget = parseEther(DEFAULT_BUDGET);
         const protocolFee = await referenceModule.getProtocolFee(budget);
         await currencyContract.mint(publisher.address, budget.add(protocolFee));
@@ -186,8 +183,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            collectModule: freeCollectModule.address,
-            collectModuleInitData: abiCoder.encode(["bool"], [true]),
+            actionModules: freeCollectModule.address,
+            actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
           })
@@ -202,9 +199,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
       let txReceipt: any;
 
       beforeEach(async () => {
-        referenceModuleInitData = getTargetedCampaignReferenceModuleInitData(
-          {}
-        );
+        referenceModuleInitData =
+          await getTargetedCampaignReferenceModuleInitData({});
         const budget = parseEther(DEFAULT_BUDGET);
         protocolFee = await referenceModule.getProtocolFee(budget);
         totalAmount = budget.add(protocolFee);
@@ -216,8 +212,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         const tx = lensHub.connect(publisher).post({
           profileId: FIRST_PROFILE_ID,
           contentURI: MOCK_URI,
-          collectModule: freeCollectModule.address,
-          collectModuleInitData: abiCoder.encode(["bool"], [true]),
+          actionModules: [freeCollectModule.address],
+          actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
           referenceModule: referenceModule.address,
           referenceModuleInitData,
         });
@@ -310,9 +306,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
       beforeEach(async () => {
         await referenceModule.setClientFeeBps(500); // 5%
 
-        referenceModuleInitData = getTargetedCampaignReferenceModuleInitData(
-          {}
-        );
+        referenceModuleInitData =
+          await getTargetedCampaignReferenceModuleInitData({});
         const budget = parseEther(DEFAULT_BUDGET);
         const protocolFee = await referenceModule.getProtocolFee(budget);
         clientFee = await referenceModule.getClientFee(budget);
@@ -326,8 +321,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            collectModule: freeCollectModule.address,
-            collectModuleInitData: abiCoder.encode(["bool"], [true]),
+            actionModules: [freeCollectModule.address],
+            actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
           })
@@ -347,8 +342,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            collectModule: freeCollectModule.address,
-            collectModuleInitData: abiCoder.encode(["bool"], [true]),
+            actionModules: [freeCollectModule.address],
+            actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
           })
@@ -367,8 +362,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            collectModule: freeCollectModule.address,
-            collectModuleInitData: abiCoder.encode(["bool"], [true]),
+            actionModules: [freeCollectModule.address],
+            actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
           })
@@ -398,7 +393,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
     context("context: with a valid merkle tree", () => {
       beforeEach(async () => {
         const referenceModuleInitData =
-          getTargetedCampaignReferenceModuleInitData({});
+          await getTargetedCampaignReferenceModuleInitData({});
         const budget = parseEther(DEFAULT_BUDGET);
         const protocolFee = await referenceModule.getProtocolFee(budget);
         const totalAmount = budget.add(protocolFee);
@@ -412,8 +407,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            collectModule: freeCollectModule.address,
-            collectModuleInitData: abiCoder.encode(["bool"], [true]),
+            actionModules: [freeCollectModule.address],
+            actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
           })
@@ -425,16 +420,18 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         const { proof, index } = CAMPAIGN_MERKLE_LEAF;
         const referenceModuleData = abiCoder.encode(
           ["bytes32[]", "uint256", "address"],
-          [proof, index, ethers.ZeroAddress]
+          [proof, index, ZERO_ADDRESS]
         );
         await expect(
           lensHub.connect(publisher).mirror({
             profileId: FIRST_PROFILE_ID, // we can mirror our own pub
-            profileIdPointed: FIRST_PROFILE_ID,
-            pubIdPointed: FIRST_PUB_ID,
+            // TODO: add MOCK_MIRROR_URI
+            metadataURI: "",
+            pointedProfileId: FIRST_PROFILE_ID,
+            pointedPubId: FIRST_PUB_ID,
+            referrerProfileIds: [],
+            referrerPubIds: [],
             referenceModuleData,
-            referenceModule: ethers.ZeroAddress,
-            referenceModuleInitData: "0x",
           })
         ).to.not.be.reverted;
 
@@ -467,16 +464,17 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         const { proof, index } = CAMPAIGN_MERKLE_LEAF;
         const referenceModuleData = abiCoder.encode(
           ["bytes32[]", "uint256", "address"],
-          [proof, index, ethers.ZeroAddress]
+          [proof, index, ZERO_ADDRESS]
         );
         await expect(
           lensHub.connect(publisher).mirror({
             profileId: FIRST_PROFILE_ID, // we can mirror our own pub
-            profileIdPointed: FIRST_PROFILE_ID,
-            pubIdPointed: FIRST_PUB_ID,
+            metadataURI: "",
+            pointedProfileId: FIRST_PROFILE_ID,
+            pointedPubId: FIRST_PUB_ID,
+            referrerProfileIds: [],
+            referrerPubIds: [],
             referenceModuleData,
-            referenceModule: ethers.ZeroAddress,
-            referenceModuleInitData: "0x",
           })
         ).to.not.be.reverted;
 
@@ -484,11 +482,12 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         await expect(
           lensHub.connect(publisher).mirror({
             profileId: FIRST_PROFILE_ID, // we can mirror our own pub
-            profileIdPointed: FIRST_PROFILE_ID,
-            pubIdPointed: FIRST_PUB_ID,
+            metadataURI: "",
+            pointedProfileId: FIRST_PROFILE_ID,
+            pointedPubId: FIRST_PUB_ID,
+            referrerProfileIds: [],
+            referrerPubIds: [],
             referenceModuleData,
-            referenceModule: ethers.ZeroAddress,
-            referenceModuleInitData: "0x",
           })
         ).to.not.be.reverted;
 
@@ -514,16 +513,17 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         const { proof, index } = CAMPAIGN_MERKLE_LEAF_TWO;
         const referenceModuleData = abiCoder.encode(
           ["bytes32[]", "uint256", "address"],
-          [proof, index, ethers.ZeroAddress]
+          [proof, index, ZERO_ADDRESS]
         );
         await expect(
           lensHub.connect(user).mirror({
             profileId: SECOND_PROFILE_ID,
-            profileIdPointed: FIRST_PROFILE_ID,
-            pubIdPointed: FIRST_PUB_ID,
+            metadataURI: "",
+            pointedProfileId: FIRST_PROFILE_ID,
+            pointedPubId: FIRST_PUB_ID,
+            referrerProfileIds: [],
+            referrerPubIds: [],
             referenceModuleData,
-            referenceModule: ethers.ZeroAddress,
-            referenceModuleInitData: "0x",
           })
         ).to.not.be.reverted;
 
@@ -553,11 +553,12 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         await expect(
           lensHub.connect(user).mirror({
             profileId: SECOND_PROFILE_ID,
-            profileIdPointed: FIRST_PROFILE_ID,
-            pubIdPointed: FIRST_PUB_ID,
+            metadataURI: "",
+            pointedProfileId: FIRST_PROFILE_ID,
+            pointedPubId: FIRST_PUB_ID,
+            referrerProfileIds: [],
+            referrerPubIds: [],
             referenceModuleData: "0x",
-            referenceModule: ethers.ZeroAddress,
-            referenceModuleInitData: "0x",
           })
         ).to.not.be.reverted;
 
@@ -591,11 +592,12 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         await expect(
           lensHub.connect(user).mirror({
             profileId: SECOND_PROFILE_ID,
-            profileIdPointed: FIRST_PROFILE_ID,
-            pubIdPointed: FIRST_PUB_ID,
+            metadataURI: "",
+            pointedProfileId: FIRST_PROFILE_ID,
+            pointedPubId: FIRST_PUB_ID,
+            referrerProfileIds: [],
+            referrerPubIds: [],
             referenceModuleData,
-            referenceModule: ethers.ZeroAddress,
-            referenceModuleInitData: "0x",
           })
         ).to.be.reverted;
       });
@@ -608,7 +610,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
 
       beforeEach(async () => {
         const referenceModuleInitData =
-          getTargetedCampaignReferenceModuleInitData({
+          await getTargetedCampaignReferenceModuleInitData({
             merkleRoot: CAMPAIGN_MERKLE_LEAF_TWO.root, // we have two leaves for this root
             budget,
             totalProfiles: 2,
@@ -626,8 +628,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            collectModule: freeCollectModule.address,
-            collectModuleInitData: abiCoder.encode(["bool"], [true]),
+            actionModules: [freeCollectModule.address],
+            actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
           })
@@ -637,11 +639,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         await expect(
           lensHub.createProfile({
             to: anotherUser.address,
-            handle: "anotheruser",
-            imageURI: OTHER_MOCK_URI,
-            followModule: ethers.ZeroAddress,
+            followModule: ZERO_ADDRESS,
             followModuleInitData: [],
-            followNFTURI: MOCK_FOLLOW_NFT_URI,
           })
         ).to.not.be.reverted;
 
@@ -651,17 +650,18 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           [
             CAMPAIGN_MERKLE_LEAF_TWO.proof,
             CAMPAIGN_MERKLE_LEAF_TWO.index,
-            ethers.ZeroAddress,
+            ZERO_ADDRESS,
           ]
         );
         await expect(
           lensHub.connect(user).mirror({
             profileId: SECOND_PROFILE_ID,
-            profileIdPointed: FIRST_PROFILE_ID,
-            pubIdPointed: FIRST_PUB_ID,
+            metadataURI: "",
+            pointedProfileId: FIRST_PROFILE_ID,
+            pointedPubId: FIRST_PUB_ID,
+            referrerProfileIds: [],
+            referrerPubIds: [],
             referenceModuleData,
-            referenceModule: ethers.ZeroAddress,
-            referenceModuleInitData: "0x",
           })
         ).to.not.be.reverted;
 
@@ -671,17 +671,18 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           [
             CAMPAIGN_MERKLE_LEAF_THREE.proof,
             CAMPAIGN_MERKLE_LEAF_THREE.index,
-            ethers.ZeroAddress,
+            ZERO_ADDRESS,
           ]
         );
 
         const tx = lensHub.connect(anotherUser).mirror({
           profileId: THIRD_PROFILE_ID,
-          profileIdPointed: FIRST_PROFILE_ID,
-          pubIdPointed: FIRST_PUB_ID,
+          metadataURI: "",
+          pointedProfileId: FIRST_PROFILE_ID,
+          pointedPubId: FIRST_PUB_ID,
+          referrerProfileIds: [],
+          referrerPubIds: [],
           referenceModuleData: referenceModuleDataTwo,
-          referenceModule: ethers.ZeroAddress,
-          referenceModuleInitData: "0x",
         });
 
         closingTxReceipt = await waitForTx(tx);
@@ -734,17 +735,18 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           [
             CAMPAIGN_MERKLE_LEAF_TWO.proof,
             CAMPAIGN_MERKLE_LEAF_TWO.index,
-            ethers.ZeroAddress,
+            ZERO_ADDRESS,
           ]
         );
         await expect(
           lensHub.connect(user).mirror({
             profileId: SECOND_PROFILE_ID,
-            profileIdPointed: FIRST_PROFILE_ID,
-            pubIdPointed: FIRST_PUB_ID,
+            metadataURI: "",
+            pointedProfileId: FIRST_PROFILE_ID,
+            pointedPubId: FIRST_PUB_ID,
+            referrerProfileIds: [],
+            referrerPubIds: [],
             referenceModuleData,
-            referenceModule: ethers.ZeroAddress,
-            referenceModuleInitData: "0x",
           })
         ).to.not.be.reverted;
 
@@ -767,7 +769,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         await referenceModule.setClientWhitelist(deployer.address, true);
 
         const referenceModuleInitData =
-          getTargetedCampaignReferenceModuleInitData({
+          await getTargetedCampaignReferenceModuleInitData({
             merkleRoot: CAMPAIGN_MERKLE_LEAF_TWO.root, // we have two leaves for this root
             budget,
             totalProfiles: 2,
@@ -786,8 +788,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            collectModule: freeCollectModule.address,
-            collectModuleInitData: abiCoder.encode(["bool"], [true]),
+            actionModules: [freeCollectModule.address],
+            actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
           })
@@ -797,11 +799,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         await expect(
           lensHub.createProfile({
             to: anotherUser.address,
-            handle: "anotheruser",
-            imageURI: OTHER_MOCK_URI,
-            followModule: ethers.ZeroAddress,
+            followModule: ZERO_ADDRESS,
             followModuleInitData: [],
-            followNFTURI: MOCK_FOLLOW_NFT_URI,
           })
         ).to.not.be.reverted;
 
@@ -817,11 +816,12 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         await expect(
           lensHub.connect(user).mirror({
             profileId: SECOND_PROFILE_ID,
-            profileIdPointed: FIRST_PROFILE_ID,
-            pubIdPointed: FIRST_PUB_ID,
+            metadataURI: "",
+            pointedProfileId: FIRST_PROFILE_ID,
+            pointedPubId: FIRST_PUB_ID,
+            referrerProfileIds: [],
+            referrerPubIds: [],
             referenceModuleData,
-            referenceModule: ethers.ZeroAddress,
-            referenceModuleInitData: "0x",
           })
         ).to.not.be.reverted;
       });
@@ -843,11 +843,12 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
             await expect(
               lensHub.connect(anotherUser).mirror({
                 profileId: THIRD_PROFILE_ID,
-                profileIdPointed: FIRST_PROFILE_ID,
-                pubIdPointed: FIRST_PUB_ID,
+                metadataURI: "",
+                pointedProfileId: FIRST_PROFILE_ID,
+                pointedPubId: FIRST_PUB_ID,
+                referrerProfileIds: [],
+                referrerPubIds: [],
                 referenceModuleData: referenceModuleDataTwo,
-                referenceModule: ethers.ZeroAddress,
-                referenceModuleInitData: "0x",
               })
             ).to.not.be.reverted;
 
@@ -889,11 +890,12 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
             await expect(
               lensHub.connect(anotherUser).mirror({
                 profileId: THIRD_PROFILE_ID,
-                profileIdPointed: FIRST_PROFILE_ID,
-                pubIdPointed: FIRST_PUB_ID,
+                metadataURI: "",
+                pointedProfileId: FIRST_PROFILE_ID,
+                pointedPubId: FIRST_PUB_ID,
+                referrerProfileIds: [],
+                referrerPubIds: [],
                 referenceModuleData: referenceModuleDataTwo,
-                referenceModule: ethers.ZeroAddress,
-                referenceModuleInitData: "0x",
               })
             ).to.not.be.reverted;
 
@@ -935,7 +937,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         await referenceModule.setClientFeeBps(500); // 5%
         await referenceModule.setClientWhitelist(deployer.address, true);
         const referenceModuleInitData =
-          getTargetedCampaignReferenceModuleInitData({
+          await getTargetedCampaignReferenceModuleInitData({
             merkleRoot: CAMPAIGN_MERKLE_LEAF_TWO.root, // for user to mirror
           });
         const budget = parseEther(DEFAULT_BUDGET);
@@ -952,8 +954,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            collectModule: freeCollectModule.address,
-            collectModuleInitData: abiCoder.encode(["bool"], [true]),
+            actionModules: [freeCollectModule.address],
+            actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
           })
@@ -971,11 +973,12 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         await expect(
           lensHub.connect(user).mirror({
             profileId: SECOND_PROFILE_ID,
-            profileIdPointed: FIRST_PROFILE_ID,
-            pubIdPointed: FIRST_PUB_ID,
+            metadataURI: "",
+            pointedProfileId: FIRST_PROFILE_ID,
+            pointedPubId: FIRST_PUB_ID,
+            referrerProfileIds: [],
+            referrerPubIds: [],
             referenceModuleData,
-            referenceModule: ethers.ZeroAddress,
-            referenceModuleInitData: "0x",
           })
         ).to.not.be.reverted;
 
@@ -1070,9 +1073,9 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
 
     it("reverts when setting a value above the allowed max", async () => {
       const max = await referenceModule.CLIENT_FEE_BPS_MAX();
-      await expect(referenceModule.setClientFeeBps(max + 1)).to.be.revertedWith(
-        "AboveMax"
-      );
+      await expect(
+        referenceModule.setClientFeeBps(max.add(1))
+      ).to.be.revertedWith("AboveMax");
     });
 
     it("updates storage and emits an event", async () => {
@@ -1142,7 +1145,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
 
       beforeEach(async () => {
         const referenceModuleInitData =
-          getTargetedCampaignReferenceModuleInitData({
+          await getTargetedCampaignReferenceModuleInitData({
             merkleRoot: CAMPAIGN_MERKLE_LEAF_TWO.root, // for user to mirror
           });
         const budget = parseEther(DEFAULT_BUDGET);
@@ -1158,8 +1161,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            collectModule: freeCollectModule.address,
-            collectModuleInitData: abiCoder.encode(["bool"], [true]),
+            actionModules: [freeCollectModule.address],
+            actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
           })
@@ -1171,17 +1174,18 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           [
             CAMPAIGN_MERKLE_LEAF_TWO.proof,
             CAMPAIGN_MERKLE_LEAF_TWO.index,
-            ethers.ZeroAddress,
+            ZERO_ADDRESS,
           ]
         );
         await expect(
           lensHub.connect(user).mirror({
             profileId: SECOND_PROFILE_ID,
-            profileIdPointed: FIRST_PROFILE_ID,
-            pubIdPointed: FIRST_PUB_ID,
+            metadataURI: "",
+            pointedProfileId: FIRST_PROFILE_ID,
+            pointedPubId: FIRST_PUB_ID,
+            referrerProfileIds: [],
+            referrerPubIds: [],
             referenceModuleData,
-            referenceModule: ethers.ZeroAddress,
-            referenceModuleInitData: "0x",
           })
         ).to.not.be.reverted;
       });
@@ -1249,7 +1253,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         await referenceModule.setClientWhitelist(deployer.address, true);
 
         const referenceModuleInitData =
-          getTargetedCampaignReferenceModuleInitData({
+          await getTargetedCampaignReferenceModuleInitData({
             merkleRoot: CAMPAIGN_MERKLE_LEAF_TWO.root, // for user to mirror
             totalProfiles: 1,
           });
@@ -1267,8 +1271,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            collectModule: freeCollectModule.address,
-            collectModuleInitData: abiCoder.encode(["bool"], [true]),
+            actionModules: [freeCollectModule.address],
+            actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
           })
@@ -1286,11 +1290,12 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         await expect(
           lensHub.connect(user).mirror({
             profileId: SECOND_PROFILE_ID,
-            profileIdPointed: FIRST_PROFILE_ID,
-            pubIdPointed: FIRST_PUB_ID,
+            metadataURI: "",
+            pointedProfileId: FIRST_PROFILE_ID,
+            pointedPubId: FIRST_PUB_ID,
+            referrerProfileIds: [],
+            referrerPubIds: [],
             referenceModuleData,
-            referenceModule: ethers.ZeroAddress,
-            referenceModuleInitData: "0x",
           })
         ).to.not.be.reverted;
       });
@@ -1319,7 +1324,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
   describe("#processComment", () => {
     beforeEach(async () => {
       const referenceModuleInitData =
-        getTargetedCampaignReferenceModuleInitData({});
+        await getTargetedCampaignReferenceModuleInitData({});
       const budget = parseEther(DEFAULT_BUDGET);
       const protocolFee = await referenceModule.getProtocolFee(budget);
       const totalAmount = budget.add(protocolFee);
@@ -1333,8 +1338,8 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         lensHub.connect(publisher).post({
           profileId: FIRST_PROFILE_ID,
           contentURI: MOCK_URI,
-          collectModule: freeCollectModule.address,
-          collectModuleInitData: abiCoder.encode(["bool"], [true]),
+          actionModules: [freeCollectModule.address],
+          actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
           referenceModule: referenceModule.address,
           referenceModuleInitData,
         })
@@ -1346,12 +1351,14 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         lensHub.connect(publisher).comment({
           profileId: FIRST_PROFILE_ID,
           contentURI: MOCK_URI,
-          profileIdPointed: FIRST_PROFILE_ID,
-          pubIdPointed: FIRST_PUB_ID,
-          collectModule: freeCollectModule.address,
-          collectModuleInitData: abiCoder.encode(["bool"], [true]),
+          pointedProfileId: FIRST_PROFILE_ID,
+          pointedPubId: FIRST_PUB_ID,
+          referrerProfileIds: [],
+          referrerPubIds: [],
           referenceModuleData: "0x",
-          referenceModule: ethers.ZeroAddress,
+          actionModules: [freeCollectModule.address],
+          actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
+          referenceModule: ZERO_ADDRESS,
           referenceModuleInitData: "0x",
         })
       ).to.not.be.reverted;
