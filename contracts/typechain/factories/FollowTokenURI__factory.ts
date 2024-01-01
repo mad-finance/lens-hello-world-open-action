@@ -113,6 +113,7 @@ export class FollowTokenURI__factory extends ContractFactory {
     address: string,
     signerOrProvider: Signer | Provider
   ): FollowTokenURI {
+    // @ts-ignore
     return new Contract(address, _abi, signerOrProvider) as FollowTokenURI;
   }
 }

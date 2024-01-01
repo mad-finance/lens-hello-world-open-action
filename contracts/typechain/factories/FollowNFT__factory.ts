@@ -1037,6 +1037,7 @@ export class FollowNFT__factory extends ContractFactory {
     address: string,
     signerOrProvider: Signer | Provider
   ): FollowNFT {
+    // @ts-ignore
     return new Contract(address, _abi, signerOrProvider) as FollowNFT;
   }
 }

@@ -126,7 +126,6 @@ export interface TargetedCampaignReferenceModuleInterface
   functions: {
     "CLIENT_FEE_BPS_MAX()": FunctionFragment;
     "HUB()": FunctionFragment;
-    "MODULE_GLOBALS()": FunctionFragment;
     "MODULE_REGISTRY()": FunctionFragment;
     "PROTOCOL_FEE_BPS_MAX()": FunctionFragment;
     "campaignRewardClaimed(uint256,uint256,uint256)": FunctionFragment;
@@ -164,7 +163,6 @@ export interface TargetedCampaignReferenceModuleInterface
     nameOrSignatureOrTopic:
       | "CLIENT_FEE_BPS_MAX"
       | "HUB"
-      | "MODULE_GLOBALS"
       | "MODULE_REGISTRY"
       | "PROTOCOL_FEE_BPS_MAX"
       | "campaignRewardClaimed"
@@ -203,10 +201,6 @@ export interface TargetedCampaignReferenceModuleInterface
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "HUB", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "MODULE_GLOBALS",
-    values?: undefined
-  ): string;
   encodeFunctionData(
     functionFragment: "MODULE_REGISTRY",
     values?: undefined
@@ -340,10 +334,6 @@ export interface TargetedCampaignReferenceModuleInterface
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "HUB", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "MODULE_GLOBALS",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(
     functionFragment: "MODULE_REGISTRY",
     data: BytesLike
@@ -621,8 +611,6 @@ export interface TargetedCampaignReferenceModule extends BaseContract {
 
     HUB(overrides?: CallOverrides): Promise<[string]>;
 
-    MODULE_GLOBALS(overrides?: CallOverrides): Promise<[string]>;
-
     MODULE_REGISTRY(overrides?: CallOverrides): Promise<[string]>;
 
     PROTOCOL_FEE_BPS_MAX(overrides?: CallOverrides): Promise<[BigNumber]>;
@@ -776,8 +764,6 @@ export interface TargetedCampaignReferenceModule extends BaseContract {
 
   HUB(overrides?: CallOverrides): Promise<string>;
 
-  MODULE_GLOBALS(overrides?: CallOverrides): Promise<string>;
-
   MODULE_REGISTRY(overrides?: CallOverrides): Promise<string>;
 
   PROTOCOL_FEE_BPS_MAX(overrides?: CallOverrides): Promise<BigNumber>;
@@ -927,8 +913,6 @@ export interface TargetedCampaignReferenceModule extends BaseContract {
     CLIENT_FEE_BPS_MAX(overrides?: CallOverrides): Promise<BigNumber>;
 
     HUB(overrides?: CallOverrides): Promise<string>;
-
-    MODULE_GLOBALS(overrides?: CallOverrides): Promise<string>;
 
     MODULE_REGISTRY(overrides?: CallOverrides): Promise<string>;
 
@@ -1156,8 +1140,6 @@ export interface TargetedCampaignReferenceModule extends BaseContract {
 
     HUB(overrides?: CallOverrides): Promise<BigNumber>;
 
-    MODULE_GLOBALS(overrides?: CallOverrides): Promise<BigNumber>;
-
     MODULE_REGISTRY(overrides?: CallOverrides): Promise<BigNumber>;
 
     PROTOCOL_FEE_BPS_MAX(overrides?: CallOverrides): Promise<BigNumber>;
@@ -1313,8 +1295,6 @@ export interface TargetedCampaignReferenceModule extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     HUB(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    MODULE_GLOBALS(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     MODULE_REGISTRY(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 

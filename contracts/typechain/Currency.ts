@@ -24,7 +24,7 @@ import type {
   TypedEvent,
   TypedListener,
   OnEvent,
-} from "../types-out/common";
+} from "./common";
 
 export interface CurrencyInterface extends utils.Interface {
   functions: {

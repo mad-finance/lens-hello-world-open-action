@@ -380,6 +380,7 @@ export class Currency__factory extends ContractFactory {
     address: string,
     signerOrProvider: Signer | Provider
   ): Currency {
+    // @ts-ignore
     return new Contract(address, _abi, signerOrProvider) as Currency;
   }
 }
