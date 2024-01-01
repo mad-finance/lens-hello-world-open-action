@@ -105,7 +105,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
             // TODO: deploy free collect module
-            actionModules: [freeCollectModule.address],
+            actionModules: [],
             actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
@@ -123,7 +123,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            actionModules: [freeCollectModule.address],
+            actionModules: [],
             actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
@@ -141,7 +141,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            actionModules: [freeCollectModule.address],
+            actionModules: [],
             actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
@@ -161,7 +161,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            actionModules: [freeCollectModule.address],
+            actionModules: [],
             actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
@@ -183,7 +183,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            actionModules: freeCollectModule.address,
+            actionModules: [],
             actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
@@ -212,7 +212,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         const tx = lensHub.connect(publisher).post({
           profileId: FIRST_PROFILE_ID,
           contentURI: MOCK_URI,
-          actionModules: [freeCollectModule.address],
+          actionModules: [],
           actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
           referenceModule: referenceModule.address,
           referenceModuleInitData,
@@ -321,7 +321,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            actionModules: [freeCollectModule.address],
+            actionModules: [],
             actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
@@ -342,7 +342,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            actionModules: [freeCollectModule.address],
+            actionModules: [],
             actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
@@ -362,7 +362,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            actionModules: [freeCollectModule.address],
+            actionModules: [],
             actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
@@ -407,7 +407,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            actionModules: [freeCollectModule.address],
+            actionModules: [],
             actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
@@ -628,7 +628,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            actionModules: [freeCollectModule.address],
+            actionModules: [],
             actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
@@ -788,7 +788,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            actionModules: [freeCollectModule.address],
+            actionModules: [],
             actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
@@ -954,7 +954,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            actionModules: [freeCollectModule.address],
+            actionModules: [],
             actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
@@ -1042,7 +1042,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
     it("reverts when setting a value above the allowed max", async () => {
       const max = await referenceModule.PROTOCOL_FEE_BPS_MAX();
       await expect(
-        referenceModule.setProtocolFeeBps(max + 1)
+        referenceModule.setProtocolFeeBps(max.add(1))
       ).to.be.revertedWith("AboveMax");
     });
 
@@ -1161,7 +1161,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            actionModules: [freeCollectModule.address],
+            actionModules: [],
             actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
@@ -1271,7 +1271,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           lensHub.connect(publisher).post({
             profileId: FIRST_PROFILE_ID,
             contentURI: MOCK_URI,
-            actionModules: [freeCollectModule.address],
+            actionModules: [],
             actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
             referenceModule: referenceModule.address,
             referenceModuleInitData,
@@ -1338,7 +1338,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
         lensHub.connect(publisher).post({
           profileId: FIRST_PROFILE_ID,
           contentURI: MOCK_URI,
-          actionModules: [freeCollectModule.address],
+          actionModules: [],
           actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
           referenceModule: referenceModule.address,
           referenceModuleInitData,
@@ -1356,7 +1356,7 @@ makeSuiteCleanRoom("TargetedCampaignReferenceModule", function () {
           referrerProfileIds: [],
           referrerPubIds: [],
           referenceModuleData: "0x",
-          actionModules: [freeCollectModule.address],
+          actionModules: [],
           actionModulesInitDatas: [abiCoder.encode(["bool"], [true])],
           referenceModule: ZERO_ADDRESS,
           referenceModuleInitData: "0x",

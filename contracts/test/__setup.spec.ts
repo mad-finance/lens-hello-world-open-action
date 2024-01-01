@@ -92,7 +92,6 @@ export let currency: Currency;
 export let currencyTwo: Currency;
 export let abiCoder: AbiCoder;
 export let mockModuleData: BytesLike;
-export let freeCollectModule: FreeCollectModule;
 export let followNFT: FollowNFT;
 export let legacyCollectNFT: LegacyCollectNFT;
 export let hubLibs: LensHubLibraryAddresses;
@@ -119,7 +118,8 @@ beforeEach(async function () {
   chainId = Number((await ethers.provider.getNetwork()).chainId);
   // notice: this might be an issue
   abiCoder = AbiCoder as any;
-  accounts = (await ethers.getSigners()) as any;
+  // @ts-ignore
+  accounts = await ethers.getSigners();
   deployer = accounts[0];
   governance = accounts[1];
   proxyAdmin = accounts[2];
@@ -269,23 +269,24 @@ beforeEach(async function () {
   // ).to.not.be.reverted;
 
   // Modules used for testing purposes
-  freeCollectModule = await new FreeCollectModule__factory(deployer).deploy(
-    lensHub.address
-  );
-  await expect(
-    lensHub
-      .connect(governance)
-      .whitelistCollectModule(freeCollectModule.address, true)
-  ).to.not.be.reverted;
+  // freeCollectModule = await new FreeCollectModule__factory(deployer).deploy(
+  //   lensHub.address
+  // );
+  // await expect(
+  //   lensHub
+  //     .connect(governance)
+  //     .whitelistCollectModule(freeCollectModule.address, true)
+  // ).to.not.be.reverted;
 
-  // // Reference modules
-  // targetedCampaignReferenceModule =
-  //   await new TargetedCampaignReferenceModule__factory(deployer).deploy(
-  //     lensHub.address,
-  //     moduleGlobals.address,
-  //     CAMPAIGN_FEE_BPS,
-  //     CAMPAIGN_CLIENT_FEE_BPS
-  //   );
+  // Reference modules
+  targetedCampaignReferenceModule =
+    await new TargetedCampaignReferenceModule__factory(deployer).deploy(
+      lensHub.address,
+      moduleRegistry.address,
+      deployer.address,
+      CAMPAIGN_FEE_BPS,
+      CAMPAIGN_CLIENT_FEE_BPS
+    );
   // await expect(
   //   lensHub
   //     .connect(governance)
