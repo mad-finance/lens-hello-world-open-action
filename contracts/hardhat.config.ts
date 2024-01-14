@@ -4,12 +4,20 @@ import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-ethers";
 import "@nomicfoundation/hardhat-verify";
 import "hardhat-deploy";
-import 'hardhat-preprocessor';
+import "hardhat-preprocessor";
 import * as tdly from "@tenderly/hardhat-tenderly";
 import dotenv from "dotenv";
 import glob from "glob";
 import path from "path";
 import "@openzeppelin/hardhat-upgrades";
+
+import "@nomiclabs/hardhat-ethers";
+import "@typechain/hardhat";
+import "solidity-coverage";
+import "hardhat-gas-reporter";
+import "hardhat-contract-sizer";
+import "hardhat-log-remover";
+import "hardhat-spdx-license-identifier";
 
 dotenv.config({ path: ".env" });
 tdly.setup({ automaticVerifications: false });
@@ -31,32 +39,33 @@ const settings = {
     enabled: true,
     runs: 2000,
   },
-  evmVersion: 'london'
+  evmVersion: "london",
 };
 
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: '0.8.21',
-        settings
-      }
+        version: "0.8.21",
+        settings,
+      },
     ],
     overrides: {
-      "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol": {
-        version: "0.8.10",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 2000,
+      "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol":
+        {
+          version: "0.8.10",
+          settings: {
+            optimizer: {
+              enabled: true,
+              runs: 2000,
+            },
           },
         },
-      }
-    }
+    },
   },
   paths: {
     sources: "./src",
-    cache: './cache_hardhat',
+    cache: "./cache_hardhat",
   },
   networks: {
     mumbai: {
@@ -66,7 +75,7 @@ const config: HardhatUserConfig = {
     polygon: {
       url: POLYGON_RPC_URL!,
       accounts: [DEPLOYER_PRIVATE_KEY!, PRIVATE_KEY!],
-    }
+    },
   },
   // tenderly: {
   //   username: TENDERLY_USERNAME!,
@@ -76,8 +85,8 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: {
       polygon: process.env.POLYGONSCAN_API_KEY!,
-    }
-  },
+    },
+  }
 };
 
 export default config;
