@@ -4,38 +4,25 @@ import "@nomiclabs/hardhat-ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect, use } from "chai";
 import { solidity } from "ethereum-waffle";
-import { BytesLike } from "ethers";
+import { BytesLike, utils } from "ethers";
 import { ethers } from "hardhat";
 import {
   LensHub,
   LensHub__factory,
-  LensHubInitializable,
   LensHubInitializable__factory,
   TransparentUpgradeableProxy__factory,
   FollowNFT__factory,
-  CollectNFT__factory,
   FollowNFT,
-  CollectNFT,
   ModuleRegistry,
   ModuleRegistry__factory,
   TargetedCampaignReferenceModule,
   TargetedCampaignReferenceModule__factory,
   LegacyCollectNFT,
-  TransparentUpgradeableProxy,
   TokenHandleRegistry__factory,
-  HandleTokenURI__factory,
   Currency__factory,
   Currency,
   LegacyCollectNFT__factory,
   LensHandles__factory,
-  // ProfileTokenURILogic__factory,
-  // FreeCollectModule__factory,
-  // ModuleGlobals,
-  // UpdatableOwnableFeeCollectModule,
-  // UpdatableOwnableFeeCollectModule__factory,
-  // TargetedCampaignReferenceModule,
-  // TargetedCampaignReferenceModule__factory,
-  // FreeCollectModule,
 } from "../typechain";
 import { LensHubLibraryAddresses } from "../typechain/factories/LensHub__factory";
 import {
@@ -95,10 +82,7 @@ export let mockModuleData: BytesLike;
 export let followNFT: FollowNFT;
 export let legacyCollectNFT: LegacyCollectNFT;
 export let hubLibs: LensHubLibraryAddresses;
-// export let eventsLib: Events;
 export let moduleRegistry: ModuleRegistry;
-
-// export let updatableOwnableFeeCollectModule: UpdatableOwnableFeeCollectModule;
 
 export let targetedCampaignReferenceModule: TargetedCampaignReferenceModule;
 
@@ -116,8 +100,7 @@ export function makeSuiteCleanRoom(name: string, tests: () => void) {
 
 beforeEach(async function () {
   chainId = Number((await ethers.provider.getNetwork()).chainId);
-  // notice: this might be an issue
-  abiCoder = AbiCoder as any;
+  abiCoder = utils.defaultAbiCoder;
   // @ts-ignore
   accounts = await ethers.getSigners();
   deployer = accounts[0];
@@ -140,7 +123,7 @@ beforeEach(async function () {
   ).deploy();
   const moduleRegistryProxy = await new TransparentUpgradeableProxy__factory(
     deployer
-  ).deploy(moduleRegistryImpl.address, deployer.address, "");
+  ).deploy(moduleRegistryImpl.address, deployer.address, []);
 
   moduleRegistry = ModuleRegistry__factory.connect(
     moduleRegistryProxy.address,
@@ -173,6 +156,17 @@ beforeEach(async function () {
     nonce + 7
   );
 
+  hubLibs = {
+    "contracts/libraries/GovernanceLib.sol:GovernanceLib": ZERO_ADDRESS,
+    "contracts/libraries/MetaTxLib.sol:MetaTxLib": ZERO_ADDRESS,
+    "contracts/libraries/ProfileLib.sol:ProfileLib": ZERO_ADDRESS,
+    "contracts/libraries/LegacyCollectLib.sol:LegacyCollectLib": ZERO_ADDRESS,
+    "contracts/libraries/FollowLib.sol:FollowLib": ZERO_ADDRESS,
+    "contracts/libraries/PublicationLib.sol:PublicationLib": ZERO_ADDRESS,
+    "contracts/libraries/MigrationLib.sol:MigrationLib": ZERO_ADDRESS,
+    "contracts/libraries/ActionLib.sol:ActionLib": ZERO_ADDRESS,
+  };
+
   // Deploy implementation contracts
   lensHubImpl = await new LensHubInitializable__factory(
     hubLibs,
@@ -198,84 +192,58 @@ beforeEach(async function () {
   );
 
   // Deploy and initialize proxy
-  const lensHubProxy = await new TransparentUpgradeableProxy__factory(
-    deployer
-  ).deploy(
+
+  const proxyFactory = new TransparentUpgradeableProxy__factory(deployer);
+
+  const lensHubProxy = await proxyFactory.deploy(
     lensHubImpl.address,
     proxyAdmin.address,
-    lensHubImpl.interface.encodeDeploy([
-      LENS_HUB_NFT_NAME,
-      LENS_HUB_NFT_SYMBOL,
-      governance.address,
-    ])
+    []
   );
 
   // Deploy LensHandles implementation.
   const lensHandlesImpl = await new LensHandles__factory(deployer).deploy(
     governance.address,
-    lensHub.address,
+    lensHubProxy.address,
     BigNumber.from(0)
   );
-  expect(lensHandlesImpl.address).to.be.equal(lensHandlesImplAddr);
+  expect(lensHandlesImpl.address.toLowerCase()).to.be.equal(
+    lensHandlesImplAddr
+  );
 
   // Deploy LensHandles proxy.
   const lensHandles = await new TransparentUpgradeableProxy__factory(
     deployer
-  ).deploy(lensHandlesImplAddr, proxyAdmin.address, "");
-  expect(lensHandles.address).to.be.equal(lensHandlesProxyAddr);
+  ).deploy(lensHandlesImplAddr, proxyAdmin.address, []);
+  expect(lensHandles.address.toLowerCase()).to.be.equal(lensHandlesProxyAddr);
 
   // Deploy TokenHandleRegistry implementation.
   const tokenHandleRegistryImpl = await new TokenHandleRegistry__factory(
     deployer
-  ).deploy(lensHub.address, lensHandlesProxyAddr);
-  expect(tokenHandleRegistryImpl.address).to.be.equal(
+  ).deploy(lensHubProxy.address, lensHandlesProxyAddr);
+  expect(tokenHandleRegistryImpl.address.toLowerCase()).to.be.equal(
     tokenHandleRegistryImplAddr
   );
 
   // Deploy TokenHandleRegistry proxy.
   const tokenHandleRegistry = await new TransparentUpgradeableProxy__factory(
     deployer
-  ).deploy(tokenHandleRegistryImplAddr, proxyAdmin.address, "");
-  expect(tokenHandleRegistry.address).to.be.equal(tokenHandleRegistryProxyAddr);
+  ).deploy(tokenHandleRegistryImplAddr, proxyAdmin.address, []);
+  expect(tokenHandleRegistry.address.toLowerCase()).to.be.equal(
+    tokenHandleRegistryProxyAddr
+  );
 
   // Cast proxy to LensHub interface.
   lensHub = LensHub__factory.connect(lensHubProxy.address, deployer);
 
-  // TODO: Deploy URI contracts (?)
-
-  lensHub.setTreasury(treasury.address);
-  lensHub.setTreasuryFee(TREASURY_FEE_BPS);
-  // TODO: set uri contracts
-
-  // hubLibs = {
-  //   "@aave/lens-protocol/contracts/libraries/PublishingLogic.sol:PublishingLogic":
-  //     publishingLogic.address,
-  //   "@aave/lens-protocol/contracts/libraries/InteractionLogic.sol:InteractionLogic":
-  //     interactionLogic.address,
-  //   "@aave/lens-protocol/contracts/libraries/ProfileTokenURILogic.sol:ProfileTokenURILogic":
-  //     profileTokenURILogic.address,
-  // };
-
-
-  // TODO: Add tests
   // Currency whitelisting
   // await expect(
-  //   moduleGlobals.connect(governance).whitelistCurrency(currency.address, true)
+  //   moduleRegistry.connect(deployer).registerErc20Currency(currency.address)
   // ).to.not.be.reverted;
   // await expect(
-  //   moduleGlobals
-  //     .connect(governance)
-  //     .whitelistCurrency(currencyTwo.address, true)
-  // ).to.not.be.reverted;
-
-  // Modules used for testing purposes
-  // freeCollectModule = await new FreeCollectModule__factory(deployer).deploy(
-  //   lensHub.address
-  // );
-  // await expect(
-  //   lensHub
-  //     .connect(governance)
-  //     .whitelistCollectModule(freeCollectModule.address, true)
+  //   moduleRegistry
+  //     .connect(deployer)
+  //     .registerErc20Currency(currencyTwo.address)
   // ).to.not.be.reverted;
 
   // Reference modules
@@ -287,22 +255,15 @@ beforeEach(async function () {
       CAMPAIGN_FEE_BPS,
       CAMPAIGN_CLIENT_FEE_BPS
     );
+
   // await expect(
-  //   lensHub
-  //     .connect(governance)
-  //     .whitelistReferenceModule(targetedCampaignReferenceModule.address, true)
+  //   moduleRegistry
+  //     .connect(deployer)
+  //     .registerModule(targetedCampaignReferenceModule.address, 2)
   // ).to.not.be.reverted;
 
   // // Unpausing protocol
   // await expect(
-  //   lensHub.connect(governance).setState(ProtocolState.Unpaused)
+  //   lensHub.connect(deployer).setState(ProtocolState.Unpaused)
   // ).to.not.be.reverted;
-
-  // // Profile creator whitelisting
-  // await expect(
-  //   lensHub.connect(governance).whitelistProfileCreator(deployer.address, true)
-  // ).to.not.be.reverted;
-
-  // Event library deployment is only needed for testing and is not reproduced in the live environment
-  // eventsLib = await new Events__factory(deployer).deploy();
 });
