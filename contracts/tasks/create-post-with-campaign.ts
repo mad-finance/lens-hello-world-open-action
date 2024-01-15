@@ -14,17 +14,17 @@ import {
 import { getBalance, getAllowance, approve } from "./../helpers/tokens";
 import { getModule } from "./../helpers/madfi";
 import { utils } from "ethers";
-import { ethers } from "hardhat";
 
 task(
   "create-post-with-campaign",
   "publishes a post and sets the reference module"
 ).setAction(async ({}, hre) => {
-  // const ethers = hre.ethers;
+  const ethers = hre.ethers;
   const networkName = hre.network.name;
+  console.log(networkName)
   const [deployer, user] = await ethers.getSigners();
   const deployerAddress = await deployer.getAddress();
-  const { lensHub } = await getLensHubDeployed(
+  const lensHub = await getLensHubDeployed(
     deployer,
     LENS_HUB_SANDBOX_ADDRESS
   );
@@ -85,18 +85,18 @@ task(
   console.log(
     `creating post with ref module TargetedCampaignReferenceModule (at: ${MODULE_ADDRESS})`
   );
+
   const inputStruct = {
     profileId: SANDBOX_DEPLOYER_PROFILE_ID,
-    contentURI:
-      "ipfs://QmWGAFtzyzB6A6gYMnb6838hysHuT2rcV8B98Gmj4T4pyY/3958.json",
-    collectModule: LENS_SANBOX_FREE_COLLECT_MODULE,
-    collectModuleInitData: utils.defaultAbiCoder.encode(["bool"], [true]),
-    referenceModule: MODULE_ADDRESS,
+    contentURI: "ipfs://QmWGAFtzyzB6A6gYMnb6838hysHuT2rcV8B98Gmj4T4pyY/3958.json",
+    actionModules: [],
+    actionModulesInitDatas: [utils.defaultAbiCoder.encode(["bool"], [true])],
+    referenceModule: referenceModule.address,
     referenceModuleInitData: data,
-  };
+  }
 
   const tx = await lensHub
-    .connect(deployer)
+    .connect(deployer as any)
     .post(inputStruct, { gasLimit: 500_000 });
   console.log(`tx: ${tx.hash}`);
   await tx.wait();
