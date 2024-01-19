@@ -9,7 +9,7 @@ import {
   SANDBOX_INTEREST_ROOT,
   SANDBOX_INTEREST_TREE_MAP,
   MUMBAI_CURRENCY_WMATIC,
-  MODULE_ADDRESS
+  MODULE_ADDRESS,
 } from "../helpers/constants";
 import { getBalance, getAllowance, approve } from "./../helpers/tokens";
 import { getModule } from "./../helpers/madfi";
@@ -21,13 +21,9 @@ task(
 ).setAction(async ({}, hre) => {
   const ethers = hre.ethers;
   const networkName = hre.network.name;
-  console.log(networkName)
   const [deployer, user] = await ethers.getSigners();
   const deployerAddress = await deployer.getAddress();
-  const lensHub = await getLensHubDeployed(
-    deployer,
-    LENS_HUB_SANDBOX_ADDRESS
-  );
+  const lensHub = await getLensHubDeployed(deployer, LENS_HUB_SANDBOX_ADDRESS);
   const referenceModule = await getModule(ethers, deployer);
 
   const merkleRoot = SANDBOX_INTEREST_ROOT;
@@ -89,19 +85,20 @@ task(
   const inputStruct = {
     profileId: SANDBOX_DEPLOYER_PROFILE_ID,
     contentURI: "ipfs://QmWGAFtzyzB6A6gYMnb6838hysHuT2rcV8B98Gmj4T4pyY/3958.json",
+
     actionModules: [],
-    actionModulesInitDatas: [utils.defaultAbiCoder.encode(["bool"], [true])],
+    actionModulesInitDatas: [],
     referenceModule: referenceModule.address,
     referenceModuleInitData: data,
-  }
+  };
 
-  const tx = await lensHub
-    .connect(deployer as any)
-    .post(inputStruct, { gasLimit: 500_000 });
+  const tx = await lensHub.post(inputStruct, { gasLimit: 500_000 });
   console.log(`tx: ${tx.hash}`);
   await tx.wait();
 
-  const pubId = await lensHub.getPubCount(SANDBOX_DEPLOYER_PROFILE_ID);
+  const profile = await lensHub.getProfile(SANDBOX_DEPLOYER_PROFILE_ID);
 
-  console.log(await lensHub.getPub(SANDBOX_DEPLOYER_PROFILE_ID, pubId));
+  console.log(
+    await lensHub.getPublication(SANDBOX_DEPLOYER_PROFILE_ID, profile.pubCount)
+  );
 });
